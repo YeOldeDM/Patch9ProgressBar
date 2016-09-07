@@ -8,7 +8,9 @@ const DISPLAY_PERCENT = 1
 const DISPLAY_AMOUNT = 2
 
 const ALIGN_LEFT = 0
+const ALIGN_BOTTOM = 0
 const ALIGN_RIGHT = 1
+const ALIGN_TOP = 1
 const ALIGN_CENTER = 2
 
 const DIRECTION_HORIZONTAL = 0
@@ -23,7 +25,7 @@ var display_text = Label.new()
 # DISPLAY TEXT PARAMS
 
 # Display Text Settings
-export(int, "None", "Percent", "Amount") var display_info setget _set_display_info
+export(int, "None", "Percent", "Amount") var display_info = 0 setget _set_display_info
 
 # Display Text Font
 export(Font) var display_info_font
@@ -35,10 +37,10 @@ export(Color) var font_color setget _set_font_color
 # PROGRESS BAR PARAMS
 
 # Progress Bar Alignment
-export(int, "Left/Bottom", "Right/Top", "Center") var progress_bar_alignment setget _set_progress_bar_alignment
+export(int, "Left/Bottom", "Right/Top", "Center") var progress_bar_alignment = 0 setget _set_progress_bar_alignment
 
 # Progress Bar Direction
-export(int, "Horizontal", "Vertical") var progress_bar_direction setget _set_progress_bar_direction
+export(int, "Horizontal", "Vertical") var progress_bar_direction = 0 setget _set_progress_bar_direction
 
 
 
@@ -105,6 +107,12 @@ func _set_progress_patch_margin(value):
 		progress_patch.set_patch_margin(i, value[i])
 
 func _set_progress_size():
+	if progress_bar_direction == DIRECTION_VERTICAL:
+		_set_progress_size_vertical()
+	if progress_bar_direction == DIRECTION_HORIZONTAL:
+		_set_progress_size_horizontal()
+
+func _set_progress_size_horizontal():
 	var pos = Vector2(0,0)
 	var size = get_size()
 	var per = _get_percent()
@@ -130,6 +138,31 @@ func _set_progress_size():
 
 	_draw_display_text()
 
+func _set_progress_size_vertical():
+	var pos = Vector2(0,0)
+	var size = get_size()
+	var per = _get_percent()
+	var y = lerp(0,size.y,per)
+	size.y = y
+	
+	if progress_bar_alignment == ALIGN_TOP:
+		progress_patch.set_pos(pos)
+		progress_patch.set_size(size)
+	
+	if progress_bar_alignment == ALIGN_BOTTOM:
+		pos.y += y
+		var prog_pos = get_size()-size
+		prog_pos.y = min(prog_pos.y, get_size().y - (progress_patch_margin[1]+progress_patch_margin[3]))
+		progress_patch.set_pos(prog_pos)
+		progress_patch.set_size(size)
+	
+	if progress_bar_alignment == ALIGN_CENTER:
+		progress_patch.set_size(size)
+		pos.y = (get_size().y / 2) - (size.y / 2)
+		pos.y = min(pos.y, (get_size().y / 2) - progress_patch_margin[1])
+		progress_patch.set_pos(pos)
+	
+	_draw_display_text()
 
 func _get_percent():
 	return (get_value()*1.0) / ((get_max()-get_min())*1.0)
@@ -169,7 +202,7 @@ func _enter_tree():
 func _value_changed(value):
 	_set_progress_size()
 
-func _changed():
+func _changed(value):
 	_set_progress_size()
 
 func _item_rect_changed():
